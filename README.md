@@ -1,5 +1,5 @@
 # alf-python
-Python bindings to Charlie Conroy's Alf code
+Python bindings to Charlie Conroy's Alf code: https://github.com/cconroy20/alf.
 
 ## Installation
 
