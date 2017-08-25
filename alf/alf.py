@@ -52,7 +52,7 @@ for i, k in enumerate(ALF_PARAMS):
     pidx[k] = i
 
 class Alf(object):
-    def __init__(self, verbose=True):
+    def __init__(self, verbose=True, ldeg=400):
                 
         if not bool(driver.is_setup):
             if verbose:
@@ -62,6 +62,11 @@ class Alf(object):
         
         self.nl = driver.get_nspec()
         self.npar = driver.get_npar() 
+        self.nfil = driver.get_nfil() 
+        
+        # Polynomial order for every `ldeg` angstroms of available spectrum
+        self.ldeg = ldeg
+        
         self.default_params = driver.get_default_parameters(self.npar)
         self.wave = driver.get_grid_lam(self.nl)
         self.params = self.default_params*1
@@ -69,12 +74,21 @@ class Alf(object):
         
     def get_model(self, in_place=True, **kwargs):
         self.set_param(**kwargs)
+        # These must be in different order than in alf.f90, don't know why
         sp = driver.get_spec(self.nl, self.params, self.npar)
         if in_place:
             self.spec = sp
         else:
             return sp
-            
+    
+    def get_M2L(self, in_place=True, **kwargs):
+        """Get line-free model and M/L ratios"""
+        self.set_param(**kwargs)
+        # These must be in different order than in alf.f90, don't know why
+        m2l = driver.get_m2l(self.nl, self.nfil, self.params, self.npar)
+
+        return m2l   
+                 
     def set_param(self, **kwargs):
         for k in kwargs:
             if k not in ALF_PARAMS:
@@ -82,7 +96,7 @@ class Alf(object):
             else:
                 self.params[pidx[k]] = kwargs[k] 
     
-    def show_params(self):
+    def info(self):
         for k in ALF_PARAMS:
             print('{0:>15s} = {1:8.2f}'.format(k, self.params[pidx[k]]))
             

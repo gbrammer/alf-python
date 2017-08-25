@@ -12,7 +12,8 @@ module driver
   integer :: is_setup=0
 
 contains
-
+  
+  ! Call setup and update dlstep/inlam
   subroutine setup_alf
         
     implicit none
@@ -33,18 +34,28 @@ contains
     
   end subroutine
   
+  ! Get dimensions of the SSP spectra
   subroutine get_nspec(ns)
     implicit none
     integer, intent(out) :: ns
     ns = nl
   end subroutine
   
+  ! Get number of parameters
   subroutine get_npar(np)
     implicit none
     integer, intent(out) :: np
     np = npar
   end subroutine
-    
+  
+  ! Get number of filters (R, i, K)
+  subroutine get_nfil(nf)
+    implicit none
+    integer, intent(out) :: nf
+    nf = nfil
+  end subroutine
+  
+  ! Get the SSP wavelength grid
   subroutine get_grid_lam(nl, lam)
     implicit none
     integer, intent(in) :: nl
@@ -122,6 +133,7 @@ contains
     
   end subroutine
   
+  ! Get model spectrum for array of parameter values `posarr`
   subroutine get_spec(nl, np, posarr, mspec)
     implicit none
     integer, intent(in) :: nl
@@ -190,6 +202,99 @@ contains
     !WRITE(*,*) 'Fit_type, powell_fitting: ', fit_type, powell_fitting
     
     CALL GETMODEL(pos,mspec,mw=1)
+    
+  end subroutine
+  
+  subroutine get_m2l(nl, np, nf, posarr, m2l)
+    implicit none
+    integer, intent(in) :: nl, np, nf
+    !integer, intent(in) :: np
+    double precision, dimension(np), intent(in) :: posarr
+    double precision, dimension(nf), intent(out) :: m2l
+
+    double precision, dimension(nl) :: lam, mspec    
+    double precision :: msto
+
+    TYPE(PARAMS) :: pos
+
+    CALL get_grid_lam(nl, lam)
+    
+    !WRITE(*,*) 'ParamsA: ', posarr
+    
+    !arr->str
+
+    pos%velz   = posarr(1)
+    pos%sigma  = posarr(2)
+    pos%logage = posarr(3)
+    pos%zh     = posarr(4)
+    !end of the super-simple and Powell-mode parameters
+
+    pos%feh    = posarr(5)
+    pos%ah     = posarr(6)
+    pos%ch     = posarr(7)
+    pos%nh     = posarr(8)
+    pos%nah    = posarr(9)
+    pos%mgh    = posarr(10)
+    pos%sih    = posarr(11)
+    pos%kh     = posarr(12)
+    pos%cah    = posarr(13)
+    pos%tih    = posarr(14)
+    !end of the simple model parameters
+
+    pos%vh     = posarr(15)
+    pos%crh    = posarr(16)
+    pos%mnh    = posarr(17)
+    pos%coh    = posarr(18)
+    pos%nih    = posarr(19)
+    pos%cuh    = posarr(20)
+    pos%srh    = posarr(21)
+    pos%bah    = posarr(22)
+    pos%euh    = posarr(23)
+
+    pos%teff      = posarr(24)
+    pos%imf1      = posarr(25)
+    pos%imf2      = posarr(26)
+    pos%logfy     = posarr(27)
+    pos%sigma2    = posarr(28)
+    pos%velz2     = posarr(29)
+    pos%logm7g    = posarr(30)
+    pos%hotteff   = posarr(31)
+    pos%loghot    = posarr(32)
+    pos%fy_logage = posarr(33)
+    pos%logtrans  = posarr(34)
+    pos%logemline_h    = posarr(35)
+    pos%logemline_oiii = posarr(36)
+    pos%logemline_sii  = posarr(37)
+    pos%logemline_ni   = posarr(38)
+    pos%logemline_nii  = posarr(39)
+    pos%jitter = posarr(40)
+    pos%imf3   = posarr(41)
+    pos%logsky = posarr(42)
+    pos%imf4   = posarr(43)
+    pos%h3     = posarr(44)
+    pos%h4     = posarr(45)
+    
+    !turn off various parameters for computing M/L
+    pos%logemline_h    = -8.0
+    pos%logemline_oiii = -8.0
+    pos%logemline_nii  = -8.0
+    pos%logemline_sii  = -8.0
+    pos%logemline_ni   = -8.0
+    pos%logtrans       = -8.0
+    
+    ! Is this safe in order to be a bit faster? 
+    pos%sigma       = 0.
+    
+    !WRITE(*,*) 'sigma, age, FeH, MgH: ', pos%sigma, pos%logage, pos%feh, pos%mgh
+    !WRITE(*,*) 'Fit_type, powell_fitting: ', fit_type, powell_fitting
+    
+    CALL GETMODEL(pos,mspec,mw=1)
+    
+    !compute the main sequence turn-off mass vs. t and Z
+    msto = MAX(MIN(10**(msto_t0+msto_t1*pos%logage) * &
+         (msto_z0+msto_z1*pos%zh+msto_z2*pos%zh**2),3.0),0.75)
+    
+    CALL GETM2L(msto,lam,mspec,pos,m2l,mw=1) !compute M/L_MW
     
   end subroutine
   
