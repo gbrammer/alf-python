@@ -30,7 +30,7 @@ contains
        lnlam(i) = i*dlstep+LOG(sspgrid%lam(1))
     ENDDO
     
-    write(*,*) "dlstep, nl_fit:", dlstep, nl
+    ! write(*,*) "dlstep, nl_fit:", dlstep, nl
     
   end subroutine
   
