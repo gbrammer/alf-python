@@ -4,8 +4,8 @@ cat /tmp/alf_mpi.sh
 sh /tmp/alf_mpi.sh
 
 echo ""
-echo "cp _alf.cpython-35m-darwin.so /Users/brammer/anaconda3/lib/python3.5/site-packages/alf-0.0.0-py3.5-macosx-10.7-x86_64.egg/alf/"
-cp _alf.cpython-35m-darwin.so /Users/brammer/anaconda3/lib/python3.5/site-packages/alf-0.0.0-py3.5-macosx-10.7-x86_64.egg/alf/
+echo "cp _alf.cpython-35m-darwin.so /Users/brammer/anaconda3/lib/python3.5/site-packages/alf-0.0.0-py3.5-macosx-10.6-x86_64.egg/alf/"
+cp _alf.cpython-35m-darwin.so /Users/brammer/anaconda3/lib/python3.5/site-packages/alf-0.0.0-py3.5-macosx-10.6-x86_64.egg/alf/
 
 echo "Done!"
 

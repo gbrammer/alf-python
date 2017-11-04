@@ -34,6 +34,32 @@ contains
     
   end subroutine
   
+  ! Set fit type
+  subroutine set_fit_type(ft)
+    implicit none
+    integer, intent(in) :: ft
+    fit_type = ft
+    WRITE(*,*) 'Fit_type:', fit_type
+  end subroutine
+  
+  ! Set emline mask
+  subroutine set_maskem(em)
+    implicit none
+    integer, intent(in) :: em
+    maskem = em
+    WRITE(*,*) 'maskem:', maskem
+  end subroutine
+  
+  ! Set fit type
+  subroutine set_imf(mw, type)
+    implicit none
+    integer, intent(in) :: mw, type
+    mwimf = mw
+    imf_type = type
+    WRITE(*,*) 'mwimf:', mwimf
+    WRITE(*,*) 'imf_type:', imf_type
+  end subroutine
+    
   ! Get dimensions of the SSP spectra
   subroutine get_nspec(ns)
     implicit none

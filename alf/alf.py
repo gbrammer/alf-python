@@ -48,12 +48,46 @@ imf4
 h3            
 h4""".split()]
 
+PRIOR_LIMITS = {'velz':(-1000,1000),          
+                 'sigma':(10,1000),       
+                 'velz2':(-1000,1000),
+                 'sigma2':(0,1000),       
+                 'logage':(0.15, np.log10(15)),    
+                 'zh':  (-1.8, 0.3),          
+                 'feh': (-0.3, 0.5),          
+                 'ah':  (-0.3, 0.5),          
+                 'ch':  (-0.3, 0.5),          
+                 'nh':  (-0.3, 1.0),          
+                 'nah': (-0.3, 1.0),          
+                 'mgh': (-0.3, 0.5),          
+                 'sih': (-0.3, 0.5),          
+                 'kh':  (-0.3, 0.5),          
+                 'cah': (-0.3, 0.5),          
+                 'tih': (-0.3, 0.5),          
+                 'vh':  (-0.3, 0.5),          
+                 'crh': (-0.3, 0.5),          
+                 'mnh': (-0.3, 0.5),          
+                 'coh': (-0.3, 0.5),          
+                 'nih': (-0.3, 0.5),          
+                 'cuh': (-0.3, 0.5),          
+                 'srh': (-0.3, 0.5),          
+                 'bah': (-0.6, 0.5),          
+                 'euh': (-0.6, 0.5),
+                 'logfy': (-6, -0.05),
+                 'fy_logage': (-0.3, 0.1),
+                 'logemline_h':   (-6,1),
+                 'logemline_oiii':(-6,1),
+                 'logemline_sii': (-6,1),
+                 'logemline_ni':  (-6,1),
+                 'logemline_nii': (-6,1),
+                 'slope':(-20,20)}
+                 
 pidx = {}
 for i, k in enumerate(ALF_PARAMS):
     pidx[k] = i
 
 class Alf(object):
-    def __init__(self, verbose=True, ldeg=400, mask_lines=False):
+    def __init__(self, fit_type=1, maskem=1, verbose=True, ldeg=400, mask_lines=False):
                 
         if not bool(driver.is_setup):
             if verbose:
@@ -65,6 +99,10 @@ class Alf(object):
         self.npar = driver.get_npar() 
         self.nfil = driver.get_nfil() 
         
+        self.set_fit_type(fit_type)
+        self.set_imf(mwimf=1, imf_type=1)
+        self.set_maskem(maskem)
+        
         # Polynomial order for every `ldeg` angstroms of available spectrum
         self.ldeg = ldeg
         
@@ -74,7 +112,33 @@ class Alf(object):
         self.wave = driver.get_grid_lam(self.nl)
         self.params = self.default_params*1
         self.get_model()
-        
+            
+    def set_fit_type(self, fit_type):
+        """
+        Set fit type: 
+            !0: fit the full model (IMF, all abundances, nuisance params, etc)
+            !1: only fit velz, sigma, SSP age, Z, Fe,C,N,O,Mg,Si,Ca,Ti,Na
+            !2: only fit velz, sigma, SSP age, Z
+        """
+        driver.set_fit_type(int(fit_type))
+        self.fit_type = fit_type
+    
+    def set_maskem(self, maskem):
+        """
+        Set maskem for emission lines: 
+            !0: Include emission lines in model
+        """
+        driver.set_maskem(int(maskem))
+        self.maskem = maskem
+    
+    def set_imf(self, mwimf=1, imf_type=1):
+        """
+        Set IMF params
+        """
+        driver.set_imf(int(mwimf), int(imf_type))
+        self.mwimf = mwimf
+        self.imf_type = imf_type
+    
     def get_model(self, in_place=True, **kwargs):
         self.set_param(**kwargs)
         # These must be in different order than in alf.f90, don't know why
@@ -109,45 +173,27 @@ class Alf(object):
         else:
             return lines
     
+    def initialize_defaults(self):
+        self.set_param(**self.array_to_dict(self.default_params, ALF_PARAMS))
+    
+    def get_defaults(self, param_names, **kwargs):
+        pdict = self.array_to_dict(self.default_params, ALF_PARAMS)
+        plist = [pdict[p] for p in param_names]
+        for k in kwargs:
+            if k in param_names:
+                plist[param_names.index(k)] = kwargs[k]
+                
+        return np.array(plist)
+    
     @staticmethod
-    def get_default_priors(param_names):
+    def get_default_priors(param_names, limits=PRIOR_LIMITS):
         from scipy.stats import uniform
         from collections import OrderedDict
-        
-        prior_limits = {'velz':(-1000,1000),          
-                         'sigma':(0,1000),       
-                         'logage':(0.1, 1.0),    
-                         'zh':  (-1, 0.2),          
-                         'feh': (-0.25, 0.25),          
-                         'ah':  (-0.25, 0.25),          
-                         'ch':  (-0.25, 0.25),          
-                         'nh':  (-0.25, 0.25),          
-                         'nah': (-0.25, 0.25),          
-                         'mgh': (-0.25, 0.25),          
-                         'sih': (-0.25, 0.25),          
-                         'kh':  (-0.25, 0.25),          
-                         'cah': (-0.25, 0.25),          
-                         'tih': (-0.25, 0.25),          
-                         'vh':  (-0.25, 0.25),          
-                         'crh': (-0.25, 0.25),          
-                         'mnh': (-0.25, 0.25),          
-                         'coh': (-0.25, 0.25),          
-                         'nih': (-0.25, 0.25),          
-                         'cuh': (-0.25, 0.25),          
-                         'srh': (-0.25, 0.25),          
-                         'bah': (-0.25, 0.25),          
-                         'euh': (-0.25, 0.25),
-                         'logemline_h':   (-4,-2),
-                         'logemline_oiii':(-4,-2),
-                         'logemline_sii': (-4,-2),
-                         'logemline_ni':  (-4,-2),
-                         'logemline_nii': (-4,-2),
-                         'slope':(-20,20)}
-        
+                
         prior = OrderedDict()
         for p in param_names:
-            if p in prior_limits:
-                lim = prior_limits[p]
+            if p in limits:
+                lim = limits[p]
                 prior[p] = uniform(loc=lim[0], scale=lim[1]-lim[0])
             else:
                 prior[p] = uniform(loc=-1.e10, scale=2.e10)
@@ -162,7 +208,11 @@ class Alf(object):
                 lnp_prior += prior[p].logpdf(param_values[ip])
         
         return lnp_prior
-        
+    
+    def get_prior_limits(self, param_names):
+        limits = [PRIOR_LIMITS[p] for p in param_names]
+        return limits
+            
     @staticmethod
     def get_parameter_scaling(param_names):
         default_scale = {'velz':5,          
