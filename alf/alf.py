@@ -1,5 +1,7 @@
 import numpy as np
 from ._alf import driver
+from astropy.cosmology import Planck15
+
 
 ALF_PARAMS = [p.strip() for p in """
 velz          
@@ -46,7 +48,8 @@ imf3
 logsky        
 imf4          
 h3            
-h4""".split()]
+h4
+""".split()]
 
 PRIOR_LIMITS = {'velz':(-1000,1000),          
                  'sigma':(10,1000),       
@@ -61,7 +64,7 @@ PRIOR_LIMITS = {'velz':(-1000,1000),
                  'nah': (-0.3, 1.0),          
                  'mgh': (-0.3, 0.5),          
                  'sih': (-0.3, 0.5),          
-                 'kh':  (-0.3, 0.5),          
+                 'kh':  (-0.01, 0.01), # used as a proxy for grism shift since doesn't affect spectrum          
                  'cah': (-0.3, 0.5),          
                  'tih': (-0.3, 0.5),          
                  'vh':  (-0.3, 0.5),          
@@ -80,7 +83,8 @@ PRIOR_LIMITS = {'velz':(-1000,1000),
                  'logemline_sii': (-6,1),
                  'logemline_ni':  (-6,1),
                  'logemline_nii': (-6,1),
-                 'slope':(-20,20)}
+                 'slope':(-20,20),
+                 'dzgrism':(-0.01, 0.01)}
                  
 pidx = {}
 for i, k in enumerate(ALF_PARAMS):
@@ -111,6 +115,7 @@ class Alf(object):
         self.default_params = driver.get_default_parameters(self.npar)
         self.wave = driver.get_grid_lam(self.nl)
         self.params = self.default_params*1
+        self.param_names = ALF_PARAMS
         self.get_model()
             
     def set_fit_type(self, fit_type):
@@ -165,7 +170,7 @@ class Alf(object):
     
     def info(self, verbose=True):
         lines = []
-        for k in ALF_PARAMS:
+        for k in self.param_names:
             lines.append('{0:>15s} = {1:8.2f}'.format(k, self.params[pidx[k]]))
         
         if verbose:
@@ -176,6 +181,23 @@ class Alf(object):
     def initialize_defaults(self):
         self.set_param(**self.array_to_dict(self.default_params, ALF_PARAMS))
     
+    @classmethod
+    def array_to_dict(self, params, param_names=[]):
+        from collections import OrderedDict
+        p_dict = OrderedDict()
+        ndim = params.ndim
+        for i, p in enumerate(param_names):
+            if ndim == 1:
+                p_dict[p] = params[i]
+            elif ndim == 2:
+                p_dict[p] = params[:,i]
+            elif ndim == 3:
+                p_dict[p] = params[:,:,i]
+            else:
+                p_dict[p] = None
+                
+        return p_dict
+        
     def get_defaults(self, param_names, **kwargs):
         pdict = self.array_to_dict(self.default_params, ALF_PARAMS)
         plist = [pdict[p] for p in param_names]
@@ -242,7 +264,8 @@ class Alf(object):
                          'logemline_oiii':2,
                          'logemline_sii':2,
                          'logemline_ni':2,
-                         'logemline_nii':2}
+                         'logemline_nii':2,
+                         'dzgrism':0.001}
         
         scale = np.ones(len(param_names))
         for ip, p in enumerate(param_names):
@@ -251,7 +274,145 @@ class Alf(object):
                 
         #scale = np.array([default_scale[p] for p in param_names])
         return scale
+    
+    def get_mass_weighted_age(self):
+        p0 = self.array_to_dict(self.params, self.param_names)
+        fy = 10**(p0['logfy'])
+        mass_age = fy*10**p0['fy_logage']+(1-fy)*10**(p0['logage'])
+        return mass_age
         
+    def abundance_correct(self, pdict=None, s07=False, b14=False, m11=True):
+        """
+        Abundance corrections
+        """
+        from scipy import constants, interpolate
+
+        p0 = self.array_to_dict(self.params, self.param_names)
+        
+        if pdict is None:
+            pdict = self.array_to_dict(self.params, self.param_names)
+        
+        # Find what parameters are specified and what are part of the `self`
+        # model.
+        for c in self.param_names:
+            if c.endswith('h') & (~c.startswith('logemline')):
+                if c not in pdict:
+                    #print(c)
+                    pdict[c] = pdict['logage']*0+p0[c]
+                            
+        ## From read_alf.py
+        # Correction factros from Schiavon 2007, Table 6
+        # NOTE: Forcing factors to be 0 for [Fe/H]=0.0,0.2
+        lib_feh = [-1.6, -1.4, -1.2, -1.0, -0.8,
+                   -0.6, -0.4, -0.2, 0.0, 0.2]
+        lib_ofe = [0.6, 0.5, 0.5, 0.4, 0.3, 0.2,
+                   0.2, 0.1, 0.0, 0.0]
+
+        if s07:
+            #Schiavon 2007
+            lib_mgfe = [0.4, 0.4, 0.4, 0.4, 0.29,
+                        0.20, 0.13, 0.08, 0.05, 0.04]
+            lib_cafe = [0.32, 0.3, 0.28, 0.26, 0.20,
+                        0.12, 0.06, 0.02, 0.0, 0.0]
+        elif b14:
+            # Fitted from Bensby+ 2014
+            lib_mgfe = [0.4 , 0.4, 0.4, 0.38, 0.37,
+                        0.27, 0.21, 0.12, 0.05, 0.0]
+            lib_cafe = [0.32, 0.3, 0.28, 0.26, 0.26,
+                        0.17, 0.12, 0.06, 0.0, 0.0]
+        elif m11 or (b14 is False and s07 is False):
+            # Fitted to Milone+ 2011 HR MILES stars
+            lib_mgfe = [0.4, 0.4, 0.4, 0.4, 0.34, 0.22,
+                        0.14, 0.11, 0.05, 0.04]
+            # from B14
+            lib_cafe = [0.32, 0.3, 0.28, 0.26, 0.26,
+                        0.17, 0.12, 0.06, 0.0, 0.0]
+
+        # In ALF the oxygen abundance is used
+        # a proxy for alpha abundance
+        del_alfe = interpolate.interp1d(lib_feh, lib_ofe,
+                                        kind='linear',
+                                        bounds_error=False,
+                                        fill_value='extrapolate')
+        del_mgfe = interpolate.interp1d(lib_feh, lib_mgfe,
+                                        kind='linear',
+                                        bounds_error=False,
+                                        fill_value='extrapolate')
+        del_cafe = interpolate.interp1d(lib_feh, lib_cafe,
+                                        kind='linear',
+                                        bounds_error=False,
+                                        fill_value='extrapolate')
+
+        #zh = np.where(self.labels == 'zH')
+        if np.isscalar(pdict['zh']):
+            al_corr = float(del_alfe(pdict['zh']))
+            mg_corr = float(del_mgfe(pdict['zh']))
+            ca_corr = float(del_cafe(pdict['zh']))
+        else:
+            al_corr = del_alfe(pdict['zh'])
+            mg_corr = del_mgfe(pdict['zh'])
+            ca_corr = del_cafe(pdict['zh'])
+            
+        group0 = ['a', 'Mg']
+        
+        # Assuming Ca~Ti~Si
+        group1 = ['Ca', 'Ti', 'Si']
+
+        # These elements seem to show no net enhancemnt
+        # at low metallicity
+        group2 = ['C', 'Ca', 'N', 'Cr', 'Ni', 'Na']
+
+        # These elements we haven't yet quantified
+        group3 = ['Ba', 'Eu', 'Sr', 'Cu', 'Co', 'K', 'V', 'Mn']
+        
+        # alpha
+        pdict['aFe'] = pdict['ah'] - pdict['feh'] + al_corr
+        
+        # Mg
+        pdict['MgFe'] = pdict['mgh'] - pdict['feh'] + mg_corr
+        
+        # Ca-like
+        for elem in group1:
+            ci = elem.lower()+'h'
+            pdict['{0}Fe'.format(elem)] = pdict[ci] - pdict['feh'] + ca_corr
+        
+        # Others
+        for elem in np.hstack([group2, group3]):
+            ci = elem.lower()+'h'
+            pdict['{0}Fe'.format(elem)] = pdict[ci] - pdict['feh']
+        
+        return pdict
+    
+    def get_stellar_mass(self, z=0, rnorm=1., cosmo=Planck15):
+        """
+        Get M/L, L, stellar mass, as measured in R-band
+        
+        Returns: 
+            M/Lr, log10(Lr), log10(stellar_mass)
+            
+        """
+        from sedpy.observate import Filter
+        import astropy.units as u
+        import astropy.constants as const
+        
+        MLr, MLi, MLk = self.get_M2L()
+        #plt.plot(self.wave, self.spec); print(MLr)
+        
+        rfilt = Filter('sdss_r0')
+        
+        norm_spec = self.get_model(in_place=False)*rnorm
+        
+        #rband_Jy = rfilt.obj_counts(self.wave, norm_spec)/rfilt.ab_zero_counts*3631
+        #rband_flam = rband_Jy/(3.34e4*rfilt.wave_pivot**2)#*u.erg/u.second/u.cm**2/u.AA
+        #dL = Planck15.luminosity_distance(z)
+        
+        Mr = rfilt.ab_mag(self.wave, norm_spec) - cosmo.distmod(z).value
+        Lr = 10**(-0.4*(Mr-rfilt.solar_ab_mag))
+        #Lr = (rband_flam*4*np.pi*dL.to(u.cm).value**2)/3.828e+33*rfilt.wave_pivot*(1+z)
+        stellar_mass = Lr*MLr
+        return MLr, np.log10(Lr), np.log10(stellar_mass)
+        
+                
     @staticmethod
     def _obj_fit_alf(fit_params, alf_data, sps, param_names, scale, retval):
         """
@@ -333,14 +494,6 @@ class Alf(object):
 
         return chi2
 
-    @classmethod
-    def array_to_dict(self, params, param_names=[]):
-        from collections import OrderedDict
-        p_dict = OrderedDict()
-        for i, p in enumerate(param_names):
-            p_dict[p] = params[i]
-        
-        return p_dict
 
 def show_jac(res, wave, param_names):
     """
