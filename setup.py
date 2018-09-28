@@ -67,9 +67,9 @@ class build_alf(build_ext):
         # Compile the library.
         #flags = '-c -I{0} --f90flags=-cpp --f90flags=-fPIC'.format(alf_dir)
         if BREAK_INSTALL:
-            flags = '-c -I{0} -I/sw/include/openmpi -L/sw/lib/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpix --f90flags=-O3'.format(alf_dir)
+            flags = '-c -I{0} -I/usr/local/include/openmpi -L/usr/local/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpix --f90flags=-O3'.format(alf_dir)
         else:
-            flags = '-c -I{0} -I/sw/include/openmpi -L/sw/lib/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpi --f90flags=-O3 --f90exec=/sw/bin/mpif90'.format(alf_dir)
+            flags = '-c -I{0} -I/usr/local/include/openmpi -L/usr/local/lib/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpi --f90flags=-O3 --f90exec=/usr/local/bin/mpifort'.format(alf_dir)
             
         flags = flags.split()
         print("Running f2py on {0} with flags {1}".format(fns, flags))

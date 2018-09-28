@@ -37,15 +37,16 @@ logm7g
 hotteff       
 loghot        
 fy_logage     
-logtrans      
 logemline_h   
+logemline_oii
 logemline_oiii
 logemline_sii 
 logemline_ni  
 logemline_nii 
+logtrans      
 jitter        
-imf3          
 logsky        
+imf3          
 imf4          
 h3            
 h4
@@ -76,13 +77,16 @@ PRIOR_LIMITS = {'velz':(-1000,1000),
                  'srh': (-0.3, 0.5),          
                  'bah': (-0.6, 0.5),          
                  'euh': (-0.6, 0.5),
+                 'teff': (-40, 40),
                  'logfy': (-6, -0.05),
                  'fy_logage': (-0.3, 0.1),
-                 'logemline_h':   (-6,1),
-                 'logemline_oiii':(-6,1),
-                 'logemline_sii': (-6,1),
-                 'logemline_ni':  (-6,1),
-                 'logemline_nii': (-6,1),
+                 'logemline_h':   (-6,2),
+                 'logemline_oii':(-6,2),
+                 'logemline_oiii':(-6,2),
+                 'logemline_sii': (-6,2),
+                 'logemline_ni':  (-6,2),
+                 'logemline_nii': (-6,2),
+                 'logsky': (-3,3),
                  'slope':(-20,20),
                  'dzgrism':(-0.01, 0.01)}
                  
@@ -168,6 +172,22 @@ class Alf(object):
             else:
                 self.params[pidx[k]] = kwargs[k] 
     
+    @property
+    def param_dict(self):
+        from collections import OrderedDict
+        d = OrderedDict()
+        for name, p in zip(self.param_names, self.params):
+            d[name] = p
+        
+        return d
+    
+    def __setitem__(self, p, value):
+        self.set_param(**{p:value})
+
+    def __getitem__(self, p):
+        ix = self.param_names.index(p)
+        return self.params[ix]
+        
     def info(self, verbose=True):
         lines = []
         for k in self.param_names:
@@ -261,6 +281,7 @@ class Alf(object):
                          'bah':0.1,          
                          'euh':0.1,
                          'logemline_h':2,
+                         'logemline_oii':2,
                          'logemline_oiii':2,
                          'logemline_sii':2,
                          'logemline_ni':2,

@@ -3,31 +3,31 @@ Python bindings to Charlie Conroy's Alf code: https://github.com/cconroy20/alf.
 
 ## Installation
 
-Hacky way to deal with f2py and Alf compiled with MPIFORT:
+(Install open-mpi with Homebrew.)
 
+```bash
+python setup.py install
 ```
-$ python setup.py install
-$ sh force_mpifort.sh
-```
-
-The latter script breaks ```python setup.py install``` intentionally and then runs the last compliation command with mpifort rather than gfortran.  Finally the script copies the newly-created `so` file to the PATH of the `alf` module (hardcoded for an OSX / Python 3.5 anaconda distro).
 
 ## Demo
 
 ```python
 import matplotlib.pyplot as plt
-import alf.alf
+import numpy as np
 
-alf_sps = alf.alf.Alf()
+from alf.alf import Alf
+
+# Initialize the Fortran functions
+sps = Alf()
 # Alf: CALL SETUP()
 
-sp = alf_sps.get_model(in_place=False, logage=0.1)
-plt.plot(alf_sps.wave, sp)
+sp = sps.get_model(in_place=False, logage=0.1)
+plt.plot(sps.wave, sp)
 
-sp = alf_sps.get_model(in_place=False, logage=0.5, sigma=150)
-plt.plot(alf_sps.wave, sp)
+sp = sps.get_model(in_place=False, logage=0.5, sigma=150)
+plt.plot(sps.wave, sp)
 
-alf_sps.show_params()
+sps.show_params()
            velz =     0.00
           sigma =   150.00
          logage =     0.50
@@ -74,4 +74,17 @@ alf_sps.show_params()
              h3 =     0.00
              h4 =     0.00
 
+# 0: full fit, 1: limited abundances, 2: simple fit
+print(sps.fit_type) 
+sps.set_fit_type(1)
+
+# Show variation with, e.g., mgh
+sps.initialize_defaults()
+m = sps.get_model(in_place=False)
+
+for mgh in np.arange(-0.8,0.11,0.1):
+    sps.set_param(mgh=mgh)
+    m_i = sps.get_model(in_place=False)
+    plt.plot(sps.wave, m/m_i, alpha=0.5, label='{0:.1f}'.format(mgh))
+    
 ```

@@ -134,18 +134,19 @@ contains
     posarr(31) = pos%hotteff
     posarr(32) = pos%loghot
     posarr(33) = pos%fy_logage
-    posarr(34) = pos%logtrans
-    posarr(35) = pos%logemline_h
+    posarr(34) = pos%logemline_h
+    posarr(35) = pos%logemline_oii
     posarr(36) = pos%logemline_oiii
     posarr(37) = pos%logemline_sii
     posarr(38) = pos%logemline_ni
     posarr(39) = pos%logemline_nii
-    posarr(40) = pos%jitter
-    posarr(41) = pos%imf3
+    posarr(40) = pos%logtrans
+    posarr(41) = pos%jitter
     posarr(42) = pos%logsky
-    posarr(43) = pos%imf4
-    posarr(44) = pos%h3
-    posarr(45) = pos%h4
+    posarr(43) = pos%imf3
+    posarr(44) = pos%imf4
+    posarr(45) = pos%h3
+    posarr(46) = pos%h4
     
   end subroutine
   
@@ -211,18 +212,19 @@ contains
     pos%hotteff   = posarr(31)
     pos%loghot    = posarr(32)
     pos%fy_logage = posarr(33)
-    pos%logtrans  = posarr(34)
-    pos%logemline_h    = posarr(35)
+    pos%logemline_h    = posarr(34)
+    pos%logemline_oii  = posarr(35)
     pos%logemline_oiii = posarr(36)
     pos%logemline_sii  = posarr(37)
     pos%logemline_ni   = posarr(38)
     pos%logemline_nii  = posarr(39)
-    pos%jitter = posarr(40)
-    pos%imf3   = posarr(41)
+    pos%logtrans  = posarr(40)
+    pos%jitter = posarr(41)
     pos%logsky = posarr(42)
-    pos%imf4   = posarr(43)
-    pos%h3     = posarr(44)
-    pos%h4     = posarr(45)
+    pos%imf3   = posarr(43)
+    pos%imf4   = posarr(44)
+    pos%h3     = posarr(45)
+    pos%h4     = posarr(46)
     
     !WRITE(*,*) 'sigma, age, FeH, MgH: ', pos%sigma, pos%logage, pos%feh, pos%mgh
     !WRITE(*,*) 'Fit_type, powell_fitting: ', fit_type, powell_fitting
@@ -287,18 +289,19 @@ contains
     pos%hotteff   = posarr(31)
     pos%loghot    = posarr(32)
     pos%fy_logage = posarr(33)
-    pos%logtrans  = posarr(34)
-    pos%logemline_h    = posarr(35)
+    pos%logemline_h    = posarr(34)
+    pos%logemline_oii  = posarr(35)
     pos%logemline_oiii = posarr(36)
     pos%logemline_sii  = posarr(37)
     pos%logemline_ni   = posarr(38)
     pos%logemline_nii  = posarr(39)
-    pos%jitter = posarr(40)
-    pos%imf3   = posarr(41)
+    pos%logtrans  = posarr(40)
+    pos%jitter = posarr(41)
     pos%logsky = posarr(42)
-    pos%imf4   = posarr(43)
-    pos%h3     = posarr(44)
-    pos%h4     = posarr(45)
+    pos%imf3   = posarr(43)
+    pos%imf4   = posarr(44)
+    pos%h3     = posarr(45)
+    pos%h4     = posarr(46)
     
     !turn off various parameters for computing M/L
     pos%logemline_h    = -8.0
@@ -320,7 +323,7 @@ contains
     msto = MAX(MIN(10**(msto_t0+msto_t1*pos%logage) * &
          (msto_z0+msto_z1*pos%zh+msto_z2*pos%zh**2),3.0),0.75)
     
-    CALL GETM2L(msto,lam,mspec,pos,m2l,mw=1) !compute M/L_MW
+    CALL GETM2L(lam,mspec,pos,m2l,mw=1) !compute M/L_MW
     
   end subroutine
   
