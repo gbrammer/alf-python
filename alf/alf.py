@@ -174,9 +174,19 @@ class Alf(object):
     
     @property
     def param_dict(self):
+        """
+        Dictionary of available parameters for a given `fit_type`.
+        """
         from collections import OrderedDict
         d = OrderedDict()
-        for name, p in zip(self.param_names, self.params):
+        
+        # Number of properties for a given fit_type
+        Np = [46,14,4][self.fit_type]
+        
+        for i, (name, p) in enumerate(zip(self.param_names, self.params)):
+            if i >= Np:
+                return d
+            
             d[name] = p
         
         return d
