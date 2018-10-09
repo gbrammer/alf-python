@@ -33,13 +33,25 @@ contains
     ! write(*,*) "dlstep, nl_fit:", dlstep, nl
     
   end subroutine
-  
+
   ! Set fit type
   subroutine set_fit_type(ft)
     implicit none
     integer, intent(in) :: ft
     fit_type = ft
     WRITE(*,*) 'Fit_type:', fit_type
+  end subroutine
+  
+  ! Set wave limits
+  subroutine set_wave_limits(il1, il2)
+    implicit none
+    double precision, intent(in) :: il1, il2
+    
+    l1 = il1
+    l2 = il2
+    nlint = 1
+    
+    WRITE(*,*) 'Wavelength limits l1, l2, nlint:', l1(1), l2(nlint), nlint
   end subroutine
   
   ! Set emline mask
@@ -50,14 +62,38 @@ contains
     WRITE(*,*) 'maskem:', maskem
   end subroutine
   
-  ! Set fit type
+  ! Set IMF type
   subroutine set_imf(mw, type)
     implicit none
     integer, intent(in) :: mw, type
     mwimf = mw
-    imf_type = type
+    imf_type = type 
     WRITE(*,*) 'mwimf:', mwimf
     WRITE(*,*) 'imf_type:', imf_type
+  end subroutine
+
+  ! Set fit_hermite flag
+  subroutine set_fit_hermite(herm)
+    implicit none
+    integer, intent(in) :: herm
+    fit_hermite = herm
+    WRITE(*,*) 'fit_hermite:', fit_hermite
+  end subroutine
+
+  ! Set fit_two_ages flag
+  subroutine set_fit_two_ages(two_ages)
+    implicit none
+    integer, intent(in) :: two_ages
+    fit_two_ages = two_ages
+    WRITE(*,*) 'fit_two_ages:', fit_two_ages
+  end subroutine
+
+  ! Set velbroad_simple flag
+  subroutine set_velbroad_simple(velb)
+    implicit none
+    integer, intent(in) :: velb
+    velbroad_simple = velb
+    WRITE(*,*) 'velbroad_simple:', velbroad_simple
   end subroutine
     
   ! Get dimensions of the SSP spectra
@@ -157,6 +193,17 @@ contains
     double precision, intent(in) :: sigma,minl,maxl
     
     CALL VELBROAD(lambda, spec, sigma, minl, maxl)
+    
+  end subroutine
+  
+  subroutine velbroad_spec_hermite(lambda, spec, sigma, minl, maxl, h34)
+    implicit none
+    double precision, dimension(:), intent(in) :: lambda
+    double precision, dimension(:), intent(inout) :: spec
+    double precision, intent(in) :: sigma,minl,maxl
+    double precision, dimension(:), intent(in), optional :: h34
+    
+    CALL VELBROAD(lambda, spec, sigma, minl, maxl, h34)
     
   end subroutine
   
