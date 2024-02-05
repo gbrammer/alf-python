@@ -678,7 +678,7 @@ class Alf(object):
 
         mask = (alf_data[0,:] > 3700) & (alf_data[0,:] < 8500)
         if sps.MASK_LINES:
-            for linew in [3727., 4102., 4341., 4862., 4960., 5008.
+            for linew in [3727., 4102., 4341., 4862., 4960., 5008.,
                           5203., 6549., 6564., 6585., 6718., 6732.]:
                 line_mask = np.abs(alf_data[0,:]-linew)/linew*CLIGHT/1.e5 > 500.
                 mask &= line_mask
