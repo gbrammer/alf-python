@@ -6,7 +6,7 @@ from __future__ import division, print_function
 import os
 import subprocess
 
-__version__ = "0.0.0"
+__version__ = "0.1"
 
 # Only import the module if not run from the setup script.
 try:
