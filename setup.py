@@ -47,6 +47,17 @@ else:
 class build_alf(build_ext):
 
     def run(self):
+        
+        if "ALF_HOME" not in os.environ:
+            msg = """
+
+$ALF_HOME environment variable not found.
+
+Set it to the path of the cloned https://github.com/cconroy20/alf.git repository
+
+"""
+            raise ValueError(msg)
+            
         # Generate the Fortran signature/interface.
         files = ['alf.f90']
         flags = " -m _alf -h alf.pyf --overwrite-signature".split()
