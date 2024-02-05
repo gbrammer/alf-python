@@ -125,6 +125,21 @@ contains
     lam = sspgrid%lam    
   end subroutine
   
+  ! Get number of ssp ages
+  subroutine get_nage(nages)
+    implicit none
+    integer, intent(out) :: nages
+    nages = nage
+  end subroutine
+  
+  ! Get the SSP age grid
+  subroutine get_ssp_logagegrid(nage, logagegrid)
+    implicit none
+    integer, intent(in) :: nage
+    double precision, dimension(nage), intent(out) :: logagegrid
+    logagegrid = sspgrid%logagegrid    
+  end subroutine
+  
   subroutine get_default_parameters(np, posarr)
     implicit none
     integer, intent(in) :: np
@@ -207,7 +222,8 @@ contains
     
   end subroutine
   
-  ! Get model spectrum for array of parameter values `posarr`
+  ! Get model spectrum for array of parameter values `posarr` and flexible IMF params
+  ! Call GETMODEL(pos, mspec) (without mw=1)
   subroutine get_spec(nl, np, posarr, mspec)
     implicit none
     integer, intent(in) :: nl
@@ -276,7 +292,81 @@ contains
     !WRITE(*,*) 'sigma, age, FeH, MgH: ', pos%sigma, pos%logage, pos%feh, pos%mgh
     !WRITE(*,*) 'Fit_type, powell_fitting: ', fit_type, powell_fitting
     
-    CALL GETMODEL(pos,mspec,mw=1)
+    CALL GETMODEL(pos, mspec)
+    
+  end subroutine
+
+  ! Get model spectrum for array of parameter values `posarr` and MW (Kroupa) IMF
+  ! Call with GETMODEL(pos, mspec, mw=1)
+  subroutine get_spec_mw(nl, np, posarr, mspec)
+    implicit none
+    integer, intent(in) :: nl
+    integer, intent(in) :: np
+    double precision, dimension(np), intent(in) :: posarr
+    double precision, dimension(nl), intent(out) :: mspec
+    
+    TYPE(PARAMS) :: pos
+
+    !WRITE(*,*) 'ParamsA: ', posarr
+    
+    !arr->str
+
+    pos%velz   = posarr(1)
+    pos%sigma  = posarr(2)
+    pos%logage = posarr(3)
+    pos%zh     = posarr(4)
+    !end of the super-simple and Powell-mode parameters
+
+    pos%feh    = posarr(5)
+    pos%ah     = posarr(6)
+    pos%ch     = posarr(7)
+    pos%nh     = posarr(8)
+    pos%nah    = posarr(9)
+    pos%mgh    = posarr(10)
+    pos%sih    = posarr(11)
+    pos%kh     = posarr(12)
+    pos%cah    = posarr(13)
+    pos%tih    = posarr(14)
+    !end of the simple model parameters
+
+    pos%vh     = posarr(15)
+    pos%crh    = posarr(16)
+    pos%mnh    = posarr(17)
+    pos%coh    = posarr(18)
+    pos%nih    = posarr(19)
+    pos%cuh    = posarr(20)
+    pos%srh    = posarr(21)
+    pos%bah    = posarr(22)
+    pos%euh    = posarr(23)
+
+    pos%teff      = posarr(24)
+    pos%imf1      = posarr(25)
+    pos%imf2      = posarr(26)
+    pos%logfy     = posarr(27)
+    pos%sigma2    = posarr(28)
+    pos%velz2     = posarr(29)
+    pos%logm7g    = posarr(30)
+    pos%hotteff   = posarr(31)
+    pos%loghot    = posarr(32)
+    pos%fy_logage = posarr(33)
+    pos%logemline_h    = posarr(34)
+    pos%logemline_oii  = posarr(35)
+    pos%logemline_oiii = posarr(36)
+    pos%logemline_sii  = posarr(37)
+    pos%logemline_ni   = posarr(38)
+    pos%logemline_nii  = posarr(39)
+    pos%logtrans  = posarr(40)
+    pos%jitter = posarr(41)
+    pos%logsky = posarr(42)
+    pos%imf3   = posarr(43)
+    pos%imf4   = posarr(44)
+    pos%h3     = posarr(45)
+    pos%h4     = posarr(46)
+    
+    !WRITE(*,*) 'sigma, age, FeH, MgH: ', pos%sigma, pos%logage, pos%feh, pos%mgh
+    !WRITE(*,*) 'Fit_type, powell_fitting: ', fit_type, powell_fitting
+    
+    CALL GETMODEL(pos, mspec, mw=1)
     
   end subroutine
   
