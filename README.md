@@ -28,7 +28,8 @@ plt.plot(sps.wave, sp)
 sp = sps.get_model(in_place=False, logage=0.5, sigma=150)
 plt.plot(sps.wave, sp)
 
-sps.show_params()
+# Print all parameters
+sps.info()
            velz =     0.00
           sigma =   150.00
          logage =     0.50
