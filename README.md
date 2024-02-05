@@ -6,6 +6,7 @@ Python bindings to Charlie Conroy's Alf code: https://github.com/cconroy20/alf.
 (Install open-mpi with Homebrew.)
 
 ```bash
+export ALF_HOME=[PATH_TO_ALF_REPOSITORY]
 python setup.py install
 ```
 
