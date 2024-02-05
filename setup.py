@@ -5,6 +5,9 @@ import sys
 import glob
 import shutil
 
+# Set this to where openmpi libraries can be found
+LIBDIR = '/opt/homebrew'
+
 try:
     from setuptools import setup, Extension, Command
     from setuptools.command.build_ext import build_ext
@@ -32,14 +35,15 @@ def invoke_f2py(files, flags=[], wd=None):
         sys.argv = oldargv
         os.chdir(olddir)
 
-# Hack to break
+# Hack to break and compile manually
 if '--break' in sys.argv:
     index = sys.argv.index('--break')
     sys.argv.pop(index)  # Removes the '--foo'
     BREAK_INSTALL = True
 else:
     BREAK_INSTALL = False
-        
+
+
 class build_alf(build_ext):
 
     def run(self):
@@ -52,7 +56,9 @@ class build_alf(build_ext):
         # Find the ALF source files.
         alf_dir = os.path.join(os.environ["ALF_HOME"], "src")
         fns = [f for f in glob.glob(os.path.join(alf_dir, "*.o"))
-               if os.path.basename(f) not in ["spec_from_sum.o", "write_a_model.o", "alf.o"]]
+               if os.path.basename(f) not in ["spec_from_sum.o",
+                                              "write_a_model.o",
+                                              "alf.o"]]
                
         # Check to make sure that all of the required modules exist.
         flag = len(fns)
@@ -67,9 +73,17 @@ class build_alf(build_ext):
         # Compile the library.
         #flags = '-c -I{0} --f90flags=-cpp --f90flags=-fPIC'.format(alf_dir)
         if BREAK_INSTALL:
-            flags = '-c -I{0} -I/usr/local/include/openmpi -L/usr/local/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpix --f90flags=-O3'.format(alf_dir)
+            flags = (f'-c -I{alf_dir} -I{LIBDIR}/include/openmpi'
+                     f' -L{LIBDIR}/lib/openmpi  --f90flags=-cpp'
+                     f' --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium'
+                     f' --f90flags=-fwrapv -lmpix --f90flags=-O3'
+                     f' --f90exec={LIBDIR}/bin/mpifort --f90flags=-O3')
         else:
-            flags = '-c -I{0} -I/usr/local/include/openmpi -L/usr/local/lib/openmpi  --f90flags=-cpp --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium --f90flags=-fwrapv -lmpi --f90flags=-O3 --f90exec=/usr/local/bin/mpifort'.format(alf_dir)
+            flags = (f'-c -I{alf_dir} -I{LIBDIR}/include/openmpi' +
+                     f' -L{LIBDIR}/lib/openmpi  --f90flags=-cpp' +
+                     ' --f90flags=-fno-strict-overflow --f90flags=-mcmodel=medium' +
+                     ' --f90flags=-fwrapv -lmpi --f90flags=-O3' +
+                     f' --f90exec={LIBDIR}/bin/mpifort')
             
         flags = flags.split()
         print("Running f2py on {0} with flags {1}".format(fns, flags))
@@ -83,7 +97,7 @@ class build_alf(build_ext):
                 os.makedirs(os.path.dirname(outfn))
             except os.error:
                 pass
-            print("Copying {0} to {1}".format(infn, outfn))
+            print(f"Copying {infn} to {outfn}")
             shutil.copyfile(infn, outfn)
 
 
