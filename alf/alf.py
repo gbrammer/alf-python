@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 
 import numpy as np
 from ._alf import driver
@@ -116,6 +117,25 @@ for i, k in enumerate(ALF_PARAMS):
 class Alf(object):
     def __init__(self, fit_type=1, fit_two_ages=0, maskem=1, fit_hermite=0, velbroad_simple=0, verbose=True, ldeg=400, mwimf=1, imf_type=1, mask_lines=False):
         """Container for the ``alf`` driver
+        
+        Parameters
+        ----------
+        fit_type : int
+        
+        fit_two_ages : int
+        
+        maskem : int
+        
+        fit_hermite : int
+        
+        ldeg : int
+        
+        mwimf : int
+        
+        imf_type : int
+        
+        mask_lines : bool
+        
         """
         if not bool(driver.is_setup):
             if verbose:
@@ -711,6 +731,53 @@ class Alf(object):
                 return -0.5*chi2
 
         return chi2
+
+
+def full_wavelength_grid():
+    """
+    Get the full wavelength grid of the Alf SSPs
+    
+    Returns
+    -------
+    wave : array-like
+        SSP wavelengths, Angstroms
+    
+    """
+    import glob
+    
+    path = os.environ['ALF_HOME']
+    files = glob.glob(os.path.join(path, 'infiles/VCJ*s100'))
+    if len(files) == 0:
+        raise ValueError('No SSP files found')
+    
+    files.sort()
+    with open(files[0]) as fp:
+        lines = fp.readlines()
+    
+    wave = np.cast[float](([l.split()[0] for l in lines]))
+    return wave
+
+
+def get_wavelength_indices(wmin, wmax):
+    """
+    Get indices of full SSP wavelength grid for a specified interval
+    
+    Parameters
+    ----------
+    wmin, wmax : float
+        Minimum and maximum wavelength, Angstroms
+    
+    Returns
+    -------
+    start, end : int
+        SSP wavelength indices
+    
+    """
+    waves = full_wavelength_grid()
+    x = np.arange(len(waves))
+    start, end = np.cast[int](np.interp([wmin, wmax], waves, x))
+    
+    return start, end
 
 
 def show_jac(res, wave, param_names):
